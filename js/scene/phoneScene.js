@@ -1,14 +1,22 @@
-import Sprite from '../base/Sprite';
+import DataStore from "../base/DataStore";
 import Background from '../runtime/background';
 // 采用750的设计稿
-const screenWidth = window.innerWidth;
-const screenHeight = window.innerHeight;
+const screenWidth = wx.getSystemInfoSync().windowWidth;
+const screenHeight =wx.getSystemInfoSync().windowHeight;
 const ratio = 750 / screenWidth;//wx.getSystemInfoSync().pixelRatio;
 const scale = 750 / screenWidth;
 const baseUrl = 'https://device.unity.cn/backend/weixin/';
 export default class Phone {
     data = {
         keepRation: false,
+        timespan: 2000,
+        timeDiff: 0,
+        imgWidth: screenWidth * ratio,
+        imgHeight: screenHeight * ratio,
+        socketOpen: false,
+        rotate: false,
+        alignLeft: 0,
+        alignTop: 0
     }
     constructor(ctx, sessionId) {
         console.log(sessionId)
@@ -16,8 +24,6 @@ export default class Phone {
         this.sessionId = sessionId;
         this.ctx = ctx;
         this.init(this.sessionId);
-        //this.drawPic();
-        this.addTouch();
     }
     init(id) {
         let _this = this;
@@ -67,12 +73,12 @@ export default class Phone {
     
         wx.onSocketOpen(function(res) {
             _this.data.socketOpen = true
-            console.log("open......")
-            _this.sendStartKey()            
+            console.log("open......");
+            _this.sendStartKey();           
+            _this.addTouchAction();
         })
     
         wx.onSocketMessage(function(res) {
-            console.log("Receive");      
             if (res.data.length < 13)
                 return
         
@@ -86,7 +92,7 @@ export default class Phone {
             }
                 
             if (Date.now() - imageTime < _this.data.timespan + _this.data.timeDiff){
-                _this.data.imgData = imageData                
+                _this.drawPic(imageData)               
             }else{
                 console.log(Date.now() - imageTime)
             }        
@@ -100,37 +106,42 @@ export default class Phone {
             console.log('error!!!!')
         })
     }
-    drawPic() {
+    drawPic(imgData) {
         let _this = this;
-        let bgImg = Sprite.getImage('question_bg');
-        this.offset = (750 - bgImg.width)/2;
-        let bg = new Sprite(bgImg, this.offset, 20 + this.bar.height + 20, bgImg.width, bgImg.height);
-        bg.draw(this.ctx);
-        this.bg = bg;
         let pic = new Image();
-        pic.src = this.img;
+        pic.src = imgData;
         pic.onload = () => {
-            _this.centerImg(pic, bg.x + 20, bg.y + 20, bg.width-40, bg.height-40);
+            if (pic.width > pic.height){
+                _this.ctx.translate(screenWidth / 2, screenHeight / 2)
+                _this.ctx.rotate(Math.PI / 2);
+                this.data.rotate = true;
+            }
+            _this.ctx.drawImage(pic, 0, 0, screenWidth * scale, screenHeight * scale);
+            // _this.centerImg(pic, 0, 0, innerWidth, innerHeight);
             _this.reDrawCanvas();
         }
     }
+    centerImg(pic,x,y,limitW,limitH) {
+        let drawWidth = pic.width;
+        let drawHeight = pic.height;
+        if(drawWidth/drawHeight>1){
+            drawHeight = limitW * (drawHeight / drawWidth);
+            drawWidth = limitW;
+            y = y + (limitH - drawHeight) / 2;
+        } else {
+            drawWidth = limitH * (drawWidth / drawHeight);
+            drawHeight = limitH;
+            x = x + (limitW - drawWidth) / 2;
+        }
+
+        this.ctx.drawImage(pic,x,y,drawWidth,drawHeight);
+    }
+
     // 重新绘制canvas 到主屏上
     reDrawCanvas() {
         DataStore.getInstance().ctx.drawImage(DataStore.getInstance().offScreenCanvas, 0, 0, screenWidth, screenHeight);
     }
-    addTouch(){
-        let _this = this;
-        wx.onTouchStart((e)=>{
-            console.log(_this.selectArea.endY);
-            if (!this.selected
-                &&e.touches[0].clientX >= _this.selectArea.x
-                && e.touches[0].clientX <= _this.selectArea.endX
-                && e.touches[0].clientY >= _this.selectArea.y
-                && e.touches[0].clientY <= _this.selectArea.endY){
-                this.selected = true;
-            }
-        });
-    }
+   
     sendStartKey(){
         if (!this.data.socketOpen)
             return;
@@ -150,6 +161,89 @@ export default class Phone {
         })
         this.sendSocketMessage(msg);  
     } 
+    sendSocketMessage(msg) {
+        if (this.data.socketOpen) {
+          wx.sendSocketMessage({
+            data:msg
+          })
+        }
+    }
+
+    addTouchAction(){
+        this.handleStart();
+        this.handleMove();
+        this.handleEnd();
+    }
+    handleStart(){
+        let _this = this;
+        wx.onTouchStart(function(e){
+            if (!_this.data.socketOpen)
+                return;
+            let touch = e.changedTouches[0]
+            let scalex = (touch.clientX - _this.data.alignLeft) * scale  / _this.data.imgWidth
+            let scaley = (touch.clientY - _this.data.alignTop) * scale / _this.data.imgHeight        
+            if (_this.data.rotate){
+                scalex = (touch.clientY - _this.data.alignTop) * scale / _this.data.imgWidth
+                scaley = 1 -(touch.clientX - _this.data.alignLeft) * scale / _this.data.imgHeight
+            }
+            let msg = JSON.stringify({
+                "msg_type": 2,
+                "msg_inject_touch_action": 0,
+                "msg_inject_touch_index": touch.identifier,
+                "msg_inject_touch_position": {
+                    "x": scalex, "y": scaley, "width": _this.data.imgWidth, "height": _this.data.imgHeight
+                }
+            })           
+            _this.sendSocketMessage(msg);          
+        })                         
+    }
+    handleMove(){
+        let _this = this;
+        wx.onTouchMove(function(e){
+            if (!_this.data.socketOpen)
+            return;
+            let touch = e.changedTouches[0]
+            let scalex = (touch.clientX - _this.data.alignLeft) * scale  / _this.data.imgWidth
+            let scaley = (touch.clientY - _this.data.alignTop) * scale / _this.data.imgHeight        
+            if (_this.data.rotate){
+                scalex = (touch.clientY - _this.data.alignTop) * scale / _this.data.imgWidth
+                scaley = 1 -(touch.clientX - _this.data.alignLeft) * scale / _this.data.imgHeight
+            }
+            let msg = JSON.stringify({
+                "msg_type": 2,
+                "msg_inject_touch_action": 2,
+                "msg_inject_touch_index": touch.identifier,
+                "msg_inject_touch_position": {
+                    "x": scalex, "y": scaley, "width": _this.data.imgWidth, "height": _this.data.imgHeight
+                }
+            })
+            _this.sendSocketMessage(msg);   
+        })          
+    }
+    handleEnd(){
+        let _this = this;
+        wx.onTouchEnd(function(e){
+            if (!_this.data.socketOpen)
+                return;
+            let touch = e.changedTouches[0]
+            let scalex = (touch.clientX - _this.data.alignLeft) * scale  / _this.data.imgWidth
+            let scaley = (touch.clientY - _this.data.alignTop) * scale  / _this.data.imgHeight        
+            if (_this.data.rotate){
+                scalex = (touch.clientY - _this.data.alignTop) * scale  / _this.data.imgWidth
+                scaley = 1 -(touch.clientX - _this.data.alignLeft) * scale / _this.data.imgHeight
+            }
+            let msg = JSON.stringify({
+                "msg_type": 2,
+                "msg_inject_touch_action": 1,
+                "msg_inject_touch_index": touch.identifier,
+                "msg_inject_touch_position": {
+                    "x": scalex, "y": scaley, "width": _this.data.imgWidth, "height": _this.data.imgHeight
+                }
+            })
+            _this.sendSocketMessage(msg);  
+        })
+           
+    }
     sendSocketMessage(msg) {
         if (this.data.socketOpen) {
           wx.sendSocketMessage({

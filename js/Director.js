@@ -37,6 +37,7 @@ export default class Director {
 
         DataStore.getInstance().offScreenCanvas = this.offScreenCanvas;
         ctx.clearRect(0, 0, screenWidth * ratio, screenHeight * ratio);
+        wx.offTouchStart();     
         this.phonenScene = new PhoneScene(phoneCtx, sessionId);
         ctx.drawImage(this.offScreenCanvas, 0, 0, screenWidth, screenHeight);
         DataStore.getInstance().currentCanvas = 'phoneCanvas';
