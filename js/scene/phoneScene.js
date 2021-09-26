@@ -25,6 +25,7 @@ export default class Phone {
         this.ctx = ctx;
         this.ctx.width = screenWidth * ratio;
         this.ctx.height = screenHeight * ratio;
+        this.ctx.save();
         this.init(this.sessionId);
     }
     init(id) {
@@ -115,14 +116,16 @@ export default class Phone {
         pic.onload = () => {
             if(pic.width > pic.height != _this.data.rotate){
                 _this.data.imgHeight = _this.ctx.width;
-                _this.data.imgWidth = _this.ctx.height;
-                _this.data.rotate = pic.width > pic.height;
+                _this.data.imgWidth = _this.ctx.height;                    
                 _this.ctx.width = _this.data.imgWidth;
-                _this.ctx.height = _this.data.imgHeight;
-                if(_this.data.rotate){
+                _this.ctx.height = _this.data.imgHeight; 
+                _this.data.rotate = pic.width > pic.height;
+                if(_this.data.rotate){                    
                     _this.ctx.translate(pic.width / 2,  pic.height / 2)
                     _this.ctx.rotate(Math.PI / 2)
                     _this.ctx.translate(-pic.height / 2, -_this.data.imgHeight + pic.width / 2)
+                }else{
+                    _this.ctx.restore();
                 }
             }             
             
