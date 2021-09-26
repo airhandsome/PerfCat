@@ -23,6 +23,8 @@ export default class Phone {
         this.background = new Background(ctx, scale);      
         this.sessionId = sessionId;
         this.ctx = ctx;
+        this.ctx.width = screenWidth * ratio;
+        this.ctx.height = screenHeight * ratio;
         this.init(this.sessionId);
     }
     init(id) {
@@ -111,15 +113,22 @@ export default class Phone {
         let pic = new Image();
         pic.src = imgData;
         pic.onload = () => {
-            if (pic.width > pic.height){
-                _this.ctx.translate(screenWidth / 2, screenHeight / 2)
-                _this.ctx.rotate(Math.PI / 2);
-                this.data.rotate = true;
-            }
-            _this.ctx.drawImage(pic, 0, 0, screenWidth * scale, screenHeight * scale);
-            // _this.centerImg(pic, 0, 0, innerWidth, innerHeight);
-            _this.reDrawCanvas();
+            if(pic.width > pic.height != _this.data.rotate){
+                _this.data.imgHeight = _this.ctx.width;
+                _this.data.imgWidth = _this.ctx.height;
+                _this.data.rotate = pic.width > pic.height;
+                _this.ctx.width = _this.data.imgWidth;
+                _this.ctx.height = _this.data.imgHeight;
+                if(_this.data.rotate){
+                    _this.ctx.translate(pic.width / 2,  pic.height / 2)
+                    _this.ctx.rotate(Math.PI / 2)
+                    _this.ctx.translate(-pic.height / 2, -_this.data.imgHeight + pic.width / 2)
+                }
+            }             
+            
+            _this.ctx.drawImage(pic, 0, 0, _this.ctx.width, _this.ctx.height);
         }
+        _this.reDrawCanvas();
     }
     centerImg(pic,x,y,limitW,limitH) {
         let drawWidth = pic.width;
