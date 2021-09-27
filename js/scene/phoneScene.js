@@ -84,7 +84,7 @@ export default class Phone {
         wx.onSocketMessage(function(res) {
             if (res.data.length < 13)
                 return
-        
+            
             let imageTime = Number(res.data.slice(0, 13))
             let imageData = res.data.slice(13, res.data.length)
             
@@ -192,6 +192,7 @@ export default class Phone {
             if (!_this.data.socketOpen)
                 return;
             let touch = e.changedTouches[0]
+            console.log(touch)
             let scalex = (touch.clientX - _this.data.alignLeft) * scale  / _this.data.imgWidth
             let scaley = (touch.clientY - _this.data.alignTop) * scale / _this.data.imgHeight        
             if (_this.data.rotate){

@@ -1,30 +1,31 @@
 import Background from '../runtime/background'
 import DataStore from '../base/DataStore';
 import Sprite from '../base/Sprite';
+import {drawText} from '../utils/index.js';
 // import {getAuthSettings, createUserInfoButton} from '../utils/auth.js';
 const screenWidth = window.innerWidth;
 const screenHeight = window.innerHeight;
+const ratio = 750 / screenWidth;//wx.getSystemInfoSync().pixelRatio;
 export default class HomeScene {
   constructor(ctx) {
       this.ctx = ctx;
       this.canvas = DataStore.getInstance().canvas;
       this.loop();
   }
-  drawHomeEle () {
-      this.homeEle = Sprite.getImage('homepage');
+  drawHomeEle () {     
       this.logoImg = Sprite.getImage('logo');
-      this.homeImg = new Sprite(this.homeEle, 0, this.logoImg.height - 60, this.homeEle.width / 2, this.homeEle.height / 2);
+      this.homeImg = new Sprite(this.logoImg, 80, screenHeight / 5 , this.logoImg.width / 2, this.logoImg.height / 2);
       this.homeImg.draw(this.ctx);
+      
+      this.title = "为移动开发者打造的真机测试服务云平台";
+      drawText(this.title, 40, screenHeight / 4 + 30, screenWidth / 5 * 4 , this.ctx, 1.1);
+      this.subtitle = "前往 device.unity.cn 了解更多"
+      drawText(this.subtitle, 80, screenHeight / 4 + 60, screenWidth / 5 * 4 , this.ctx, 1.1, "#2196f3");
   }
-  drawButton () {
-      this.btnImg = Sprite.getImage('start_btn');
-      this.startSprite = new Sprite(this.btnImg, (screenWidth - this.btnImg.width / 2) / 2, this.homeImg.height + 60,
-                                    this.btnImg.width / 2, this.btnImg.height / 2);
-      this.startSprite.draw(this.ctx);
-
-      this.scanImg = Sprite.getImage('saoma_btn');
-      this.scanSprite = new Sprite(this.scanImg, (screenWidth - this.scanImg.width / 2) / 2, this.startSprite.y + this.startSprite.height + 20,
-          this.scanImg.width / 2, this.scanImg.height / 2);
+  drawButton () {      
+      this.scanImg = Sprite.getImage('scan_btn');
+      this.scanSprite = new Sprite(this.scanImg, (screenWidth - this.scanImg.width) / 2 + 60 , screenHeight / 2 ,
+          this.scanImg.width/1.5, this.scanImg.height/1.5);
       this.scanSprite.draw(this.ctx);
 
       this.bindEvent();
@@ -42,13 +43,7 @@ export default class HomeScene {
         wx.onTouchStart((e) => {
             let x = e.touches[0].clientX,
                 y = e.touches[0].clientY;
-            if (x >= _this.startSprite.x
-                && x <= _this.startSprite.x + _this.startSprite.width
-                && y >= _this.startSprite.y
-                && y <= _this.startSprite.y + _this.startSprite.height) {
-                    cancelAnimationFrame(_this.requestId);
-                    DataStore.getInstance().director.toPhoneScene('9e6ae364-bc63-4aca-84cf-7fff63292cb9');   
-            } else if (x >= _this.scanSprite.x
+            if (x >= _this.scanSprite.x
                 && x <= _this.scanSprite.x + _this.scanSprite.width
                 && y >= _this.scanSprite.y
                 && y <= _this.scanSprite.y + _this.scanSprite.height) {                    

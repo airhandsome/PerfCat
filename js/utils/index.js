@@ -1,9 +1,9 @@
-export const drawText = function(t, x, y, w, context, scale = 1) {
+export const drawText = function(t, x, y, w, context, scale = 1, style="#000") {
   var chr = t.split("");
   var temp = "";
   var row = [];
 
-  context.fillStyle = "#000";
+  context.fillStyle = style;
   context.font = `${16*scale}px Arial`;
   context.textBaseline = "middle";
 
