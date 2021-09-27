@@ -2,7 +2,8 @@ import DataStore from "../base/DataStore";
 import Background from '../runtime/background';
 // 采用750的设计稿
 const screenWidth = wx.getSystemInfoSync().windowWidth;
-const screenHeight =wx.getSystemInfoSync().windowHeight;
+const screenHeight = wx.getSystemInfoSync().windowHeight;
+const ios_mode = wx.getSystemInfoSync().platform == "ios";
 const ratio = 750 / screenWidth;//wx.getSystemInfoSync().pixelRatio;
 const scale = 750 / screenWidth;
 const baseUrl = 'https://device.unity.cn/backend/weixin/';
@@ -16,7 +17,9 @@ export default class Phone {
         socketOpen: false,
         rotate: false,
         alignLeft: 0,
-        alignTop: 0
+        alignTop: 0,
+        identifier_list: [null, null, null, null, null, null, null, null, null, null],
+        identifier_map: {}
     }
     constructor(ctx, sessionId) {
         console.log(sessionId)
@@ -65,6 +68,20 @@ export default class Phone {
           }
         })
     }
+    setShowAndHide(){
+        wx.onShow((result) => {
+            console.log("onshow")
+            this.connectWebSocket()
+        })
+
+        wx.onHide((res) => {
+            console.log("onhide")            
+            wx.closeSocket({
+                code: 1000,
+            })            
+        })
+    }
+
     connectWebSocket(){
         let _this = this
         wx.connectSocket({
@@ -77,7 +94,7 @@ export default class Phone {
         wx.onSocketOpen(function(res) {
             _this.data.socketOpen = true
             console.log("open......");
-            _this.sendStartKey();           
+            // _this.sendStartKey();           
             _this.addTouchAction();
         })
     
@@ -184,7 +201,7 @@ export default class Phone {
     addTouchAction(){
         this.handleStart();
         this.handleMove();
-        this.handleEnd();
+        this.handleEnd();       
     }
     handleStart(){
         let _this = this;
@@ -192,7 +209,6 @@ export default class Phone {
             if (!_this.data.socketOpen)
                 return;
             let touch = e.changedTouches[0]
-            console.log(touch)
             let scalex = (touch.clientX - _this.data.alignLeft) * scale  / _this.data.imgWidth
             let scaley = (touch.clientY - _this.data.alignTop) * scale / _this.data.imgHeight        
             if (_this.data.rotate){
@@ -202,11 +218,12 @@ export default class Phone {
             let msg = JSON.stringify({
                 "msg_type": 2,
                 "msg_inject_touch_action": 0,
-                "msg_inject_touch_index": touch.identifier,
+                "msg_inject_touch_index": ios_mode? _this.addIdentifierKey(touch.identifier): touch.identifier,
                 "msg_inject_touch_position": {
                     "x": scalex, "y": scaley, "width": _this.data.imgWidth, "height": _this.data.imgHeight
                 }
             })           
+            // console.log("start " + msg)
             _this.sendSocketMessage(msg);          
         })                         
     }
@@ -225,11 +242,12 @@ export default class Phone {
             let msg = JSON.stringify({
                 "msg_type": 2,
                 "msg_inject_touch_action": 2,
-                "msg_inject_touch_index": touch.identifier,
+                "msg_inject_touch_index": ios_mode? _this.getIdentifierKey(touch.identifier) : touch.identifier,
                 "msg_inject_touch_position": {
                     "x": scalex, "y": scaley, "width": _this.data.imgWidth, "height": _this.data.imgHeight
                 }
             })
+            // console.log("move " + msg)
             _this.sendSocketMessage(msg);   
         })          
     }
@@ -248,11 +266,12 @@ export default class Phone {
             let msg = JSON.stringify({
                 "msg_type": 2,
                 "msg_inject_touch_action": 1,
-                "msg_inject_touch_index": touch.identifier,
+                "msg_inject_touch_index": ios_mode? _this.removeIdentifierKey(touch.identifier) : touch.identifier,
                 "msg_inject_touch_position": {
                     "x": scalex, "y": scaley, "width": _this.data.imgWidth, "height": _this.data.imgHeight
                 }
             })
+            // console.log("end " + msg)
             _this.sendSocketMessage(msg);  
         })
            
@@ -264,4 +283,27 @@ export default class Phone {
           })
         }
     }
+
+    addIdentifierKey(key){
+        let i = 0;
+        for(i = 0; i<this.data.identifier_list.length; i++){
+            if (this.data.identifier_list[i] == null)
+                break
+        }
+        this.data.identifier_map[key] = i
+        this.data.identifier_list[i] = key
+        return i
+    }
+
+    getIdentifierKey(key){
+        return this.data.identifier_map[key]
+    }
+
+    removeIdentifierKey(key){
+        let val = this.data.identifier_map[key]
+        this.data.identifier_map[key] = 0
+        this.data.identifier_list[val] = null
+        return val
+    }
+
 }
