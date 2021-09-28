@@ -2,10 +2,9 @@ import Background from '../runtime/background'
 import DataStore from '../base/DataStore';
 import Sprite from '../base/Sprite';
 import {drawText} from '../utils/index.js';
-// import {getAuthSettings, createUserInfoButton} from '../utils/auth.js';
 const screenWidth = window.innerWidth;
 const screenHeight = window.innerHeight;
-const ratio = 750 / screenWidth;//wx.getSystemInfoSync().pixelRatio;
+const scale = 750 / screenWidth;//wx.getSystemInfoSync().pixelRatio;
 export default class HomeScene {
   constructor(ctx) {
       this.ctx = ctx;
@@ -14,13 +13,13 @@ export default class HomeScene {
   }
   drawHomeEle () {     
       this.logoImg = Sprite.getImage('logo');
-      this.homeImg = new Sprite(this.logoImg, 80, screenHeight / 5 , this.logoImg.width / 2, this.logoImg.height / 2);
+      this.homeImg = new Sprite(this.logoImg, screenWidth / 2 - this.logoImg.width / 4, screenHeight / 5 , this.logoImg.width / 2, this.logoImg.height / 2);
       this.homeImg.draw(this.ctx);
       
       this.title = "为移动开发者打造的真机测试服务云平台";
-      drawText(this.title, 40, screenHeight / 4 + 30, screenWidth / 5 * 4 , this.ctx, 1.1);
+      drawText(this.title, screenWidth / 2 - screenWidth / 5 * 2 , screenHeight / 4 + 30,  screenWidth / 5 * 4, this.ctx, 1.1);
       this.subtitle = "前往 device.unity.cn 了解更多"
-      drawText(this.subtitle, 80, screenHeight / 4 + 60, screenWidth / 5 * 4 , this.ctx, 1.1, "#2196f3");
+      drawText(this.subtitle, screenWidth / 2 - screenWidth / 10 * 3 , screenHeight / 4 + 60, screenWidth / 5 * 3 , this.ctx, 1.1, "#2196f3");
   }
   drawButton () {      
       this.scanImg = Sprite.getImage('scan_btn');

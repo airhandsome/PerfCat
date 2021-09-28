@@ -4,7 +4,7 @@ import Background from '../runtime/background';
 const screenWidth = wx.getSystemInfoSync().windowWidth;
 const screenHeight = wx.getSystemInfoSync().windowHeight;
 const ios_mode = wx.getSystemInfoSync().platform == "ios";
-const ratio = 750 / screenWidth;//wx.getSystemInfoSync().pixelRatio;
+let ratio = screenHeight / screenWidth;
 const scale = 750 / screenWidth;
 const baseUrl = 'https://device.unity.cn/backend/weixin/';
 export default class Phone {
@@ -12,12 +12,14 @@ export default class Phone {
         keepRation: false,
         timespan: 2000,
         timeDiff: 0,
-        imgWidth: screenWidth * ratio,
-        imgHeight: screenHeight * ratio,
+        imgWidth: screenWidth * scale,
+        imgHeight: screenHeight * scale,
         socketOpen: false,
         rotate: false,
         alignLeft: 0,
         alignTop: 0,
+        firstLoad: true,
+        keepRation: true,
         identifier_list: [null, null, null, null, null, null, null, null, null, null],
         identifier_map: {}
     }
@@ -26,9 +28,8 @@ export default class Phone {
         this.background = new Background(ctx, scale);      
         this.sessionId = sessionId;
         this.ctx = ctx;
-        this.ctx.width = screenWidth * ratio;
-        this.ctx.height = screenHeight * ratio;
-        this.ctx.save();
+        this.ctx.width = screenWidth * scale;
+        this.ctx.height = screenHeight * scale;       
         this.init(this.sessionId);
     }
     init(id) {
@@ -127,44 +128,58 @@ export default class Phone {
         })
     }
     drawPic(imgData) {
-        let _this = this;
+        let _this = this;       
+
         let pic = new Image();
         pic.src = imgData;
         pic.onload = () => {
+            if (this.data.firstLoad && this.data.keepRation){
+                let localWidth = pic.width
+                let localHeight = pic.height
+                //make sure is portrait  width < height
+                if (localWidth > localHeight){
+                    let tmp = localWidth
+                    localWidth = localHeight
+                    localHeight = tmp
+                }
+    
+                let localRatio = localHeight / localWidth
+                let tmpWidth = _this.data.imgHeight * localWidth / localHeight
+                let tmpHeight = _this.data.imgWidth * localHeight / localWidth
+                if (localRatio > ratio){  // the cloud device is longer than now
+                    _this.data.imgWidth = tmpWidth;
+                    _this.data.alignLeft = (_this.ctx.width - tmpWidth) / 2;                                    
+                }else{                  // the cloud device is fatter than now
+                    _this.data.imgHeight = tmpHeight;
+                    _this.data.alignTop = (_this.ctx.height - tmpHeight) / 2;
+                }
+                ratio = localRatio;
+                _this.data.firstLoad = false;   
+                _this.ctx.translate(_this.data.alignLeft, _this.data.alignTop)
+                _this.ctx.save();
+                console.log(_this.data.alignLeft, _this.data.alignTop, ratio)
+            } 
+
             if(pic.width > pic.height != _this.data.rotate){
-                _this.data.imgHeight = _this.ctx.width;
-                _this.data.imgWidth = _this.ctx.height;                    
-                _this.ctx.width = _this.data.imgWidth;
-                _this.ctx.height = _this.data.imgHeight; 
+                let tmp = _this.data.imgHeight;
+                _this.data.imgHeight = _this.data.imgWidth;
+                _this.data.imgWidth = tmp;                    
                 _this.data.rotate = pic.width > pic.height;
-                if(_this.data.rotate){                    
-                    _this.ctx.translate(pic.width / 2,  pic.height / 2)
-                    _this.ctx.rotate(Math.PI / 2)
-                    _this.ctx.translate(-pic.height / 2, -_this.data.imgHeight + pic.width / 2)
-                }else{
+                _this.ctx.width = pic.width
+                _this.ctx.header = pic.header
+
+                if(_this.data.rotate){                                        
+                    _this.ctx.rotate(Math.PI / 180 * 90)  // rotate 90
+                    _this.ctx.translate(0, -_this.data.imgHeight)    
+                }else{                    
                     _this.ctx.restore();
+                    _this.ctx.save();
                 }
             }             
-            
-            _this.ctx.drawImage(pic, 0, 0, _this.ctx.width, _this.ctx.height);
+            _this.ctx.drawImage(pic, 0, 0, _this.data.imgWidth, _this.data.imgHeight);
         }
         _this.reDrawCanvas();
-    }
-    centerImg(pic,x,y,limitW,limitH) {
-        let drawWidth = pic.width;
-        let drawHeight = pic.height;
-        if(drawWidth/drawHeight>1){
-            drawHeight = limitW * (drawHeight / drawWidth);
-            drawWidth = limitW;
-            y = y + (limitH - drawHeight) / 2;
-        } else {
-            drawWidth = limitH * (drawWidth / drawHeight);
-            drawHeight = limitH;
-            x = x + (limitW - drawWidth) / 2;
-        }
-
-        this.ctx.drawImage(pic,x,y,drawWidth,drawHeight);
-    }
+    }    
 
     // 重新绘制canvas 到主屏上
     reDrawCanvas() {
@@ -209,11 +224,11 @@ export default class Phone {
             if (!_this.data.socketOpen)
                 return;
             let touch = e.changedTouches[0]
-            let scalex = (touch.clientX - _this.data.alignLeft) * scale  / _this.data.imgWidth
-            let scaley = (touch.clientY - _this.data.alignTop) * scale / _this.data.imgHeight        
+            let scalex = (touch.clientX - _this.data.alignLeft / scale) * scale  / _this.data.imgWidth
+            let scaley = (touch.clientY - _this.data.alignTop / scale) * scale / _this.data.imgHeight        
             if (_this.data.rotate){
-                scalex = (touch.clientY - _this.data.alignTop) * scale / _this.data.imgWidth
-                scaley = 1 -(touch.clientX - _this.data.alignLeft) * scale / _this.data.imgHeight
+                scalex = (touch.clientY - _this.data.alignTop / scale) * scale / _this.data.imgWidth
+                scaley = 1 -(touch.clientX - _this.data.alignLeft / scale) * scale / _this.data.imgHeight
             }
             let msg = JSON.stringify({
                 "msg_type": 2,
@@ -233,11 +248,11 @@ export default class Phone {
             if (!_this.data.socketOpen)
             return;
             let touch = e.changedTouches[0]
-            let scalex = (touch.clientX - _this.data.alignLeft) * scale  / _this.data.imgWidth
-            let scaley = (touch.clientY - _this.data.alignTop) * scale / _this.data.imgHeight        
+            let scalex = (touch.clientX - _this.data.alignLeft / scale) * scale  / _this.data.imgWidth
+            let scaley = (touch.clientY - _this.data.alignTop / scale) * scale / _this.data.imgHeight        
             if (_this.data.rotate){
-                scalex = (touch.clientY - _this.data.alignTop) * scale / _this.data.imgWidth
-                scaley = 1 -(touch.clientX - _this.data.alignLeft) * scale / _this.data.imgHeight
+                scalex = (touch.clientY - _this.data.alignTop / scale) * scale / _this.data.imgWidth
+                scaley = 1 -(touch.clientX - _this.data.alignLeft / scale) * scale / _this.data.imgHeight
             }
             let msg = JSON.stringify({
                 "msg_type": 2,
@@ -257,11 +272,11 @@ export default class Phone {
             if (!_this.data.socketOpen)
                 return;
             let touch = e.changedTouches[0]
-            let scalex = (touch.clientX - _this.data.alignLeft) * scale  / _this.data.imgWidth
-            let scaley = (touch.clientY - _this.data.alignTop) * scale  / _this.data.imgHeight        
+            let scalex = (touch.clientX - _this.data.alignLeft / scale) * scale  / _this.data.imgWidth
+            let scaley = (touch.clientY - _this.data.alignTop / scale) * scale  / _this.data.imgHeight        
             if (_this.data.rotate){
-                scalex = (touch.clientY - _this.data.alignTop) * scale  / _this.data.imgWidth
-                scaley = 1 -(touch.clientX - _this.data.alignLeft) * scale / _this.data.imgHeight
+                scalex = (touch.clientY - _this.data.alignTop / scale) * scale  / _this.data.imgWidth
+                scaley = 1 -(touch.clientX - _this.data.alignLeft / scale) * scale / _this.data.imgHeight
             }
             let msg = JSON.stringify({
                 "msg_type": 2,
