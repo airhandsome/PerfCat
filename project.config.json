@@ -21,7 +21,7 @@
         "lazyloadPlaceholderEnable": false,
         "useMultiFrameRuntime": true,
         "useApiHook": true,
-        "useApiHostProcess": false,
+        "useApiHostProcess": true,
         "babelSetting": {
             "ignore": [],
             "disablePlugins": [],
@@ -32,7 +32,10 @@
         "packNpmManually": false,
         "packNpmRelationList": [],
         "minifyWXSS": true,
-        "showES6CompileOption": false
+        "disableUseStrict": false,
+        "useStaticServer": false,
+        "showES6CompileOption": false,
+        "useCompilerPlugins": false
     },
     "compileType": "game",
     "libVersion": "1.9.94",
