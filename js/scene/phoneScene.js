@@ -9,6 +9,7 @@ const scale = 750 / screenWidth;
 const baseUrl = 'https://device.unity.cn/backend/weixin/';
 export default class Phone {
     data = {
+        sessionId: '',
         keepRation: false,
         timespan: 2000,
         timeDiff: 0,
@@ -32,8 +33,9 @@ export default class Phone {
         this.ctx.height = screenHeight * scale;       
         this.init(this.sessionId);
     }
-    init(id) {
+    init(id) {    
         let _this = this;
+        ratio = screenHeight / screenWidth;  // should be reset incase reconnect
         if (id == null){
             wx.showToast({
                 title: '二维码错误',
@@ -95,7 +97,7 @@ export default class Phone {
         wx.onSocketOpen(function(res) {
             _this.data.socketOpen = true
             console.log("open......");
-            // _this.sendStartKey();           
+            _this.sendStartKey();           
             _this.addTouchAction();
         })
     
@@ -122,9 +124,27 @@ export default class Phone {
         wx.onSocketClose(function(res) {
             _this.data.socketOpen = false
             console.log('closed!!!!')
+            wx.showModal({
+                title: '错误',
+                content: '网络连接已断开，是否重新连接',
+                success (res) {
+                  if (res.confirm) {
+                    console.log('用户点击确定')
+                    DataStore.getInstance().director.toPhoneScene(_this.sessionId);  
+                  } else if (res.cancel) {
+                    console.log('用户点击取消')
+                    DataStore.getInstance().director.showHomeScene(DataStore.getInstance().ctx);  
+                  }
+                }
+            })           
         })
         wx.onSocketError((result) => {
             console.log('error!!!!')
+            wx.showToast({
+                title: '连接错误',
+                icon: 'error',
+                duration: 2000
+            })
         })
     }
     drawPic(imgData) {
@@ -146,6 +166,8 @@ export default class Phone {
                 let localRatio = localHeight / localWidth
                 let tmpWidth = _this.data.imgHeight * localWidth / localHeight
                 let tmpHeight = _this.data.imgWidth * localHeight / localWidth
+                console.log("local ratio" + ratio)
+                console.log("dest ratio " + localRatio)
                 if (localRatio > ratio){  // the cloud device is longer than now
                     _this.data.imgWidth = tmpWidth;
                     _this.data.alignLeft = (_this.ctx.width - tmpWidth) / 2;                                    
@@ -190,18 +212,32 @@ export default class Phone {
         if (!this.data.socketOpen)
             return;
 
+        let _this = this;
         let msg = JSON.stringify({
-            "msg_type": 0,
-            "msg_inject_keycode_action": 0,
-            "msg_inject_keycode_keycode": '__VolumeDown',
-            "msg_inject_keycode_metastate": 0
+            "msg_type": 2,
+            "msg_inject_touch_action": 0,
+            "msg_inject_touch_index": 0,
+            "msg_inject_touch_position": {
+                "x": 0.9, "y": 0.9, "width": _this.data.imgWidth, "height": _this.data.imgHeight
+            }
+        })      
+        this.sendSocketMessage(msg);  
+        msg = JSON.stringify({
+            "msg_type": 2,
+            "msg_inject_touch_action": 2,
+            "msg_inject_touch_index": 0,
+            "msg_inject_touch_position": {
+                "x": 0.9, "y": 0.8, "width": _this.data.imgWidth, "height": _this.data.imgHeight
+            }
         })
         this.sendSocketMessage(msg);  
         msg = JSON.stringify({
-            "msg_type": 0,
-            "msg_inject_keycode_action": 1,
-            "msg_inject_keycode_keycode": '__VolumeDown',
-            "msg_inject_keycode_metastate": 0
+            "msg_type": 2,
+            "msg_inject_touch_action": 1,
+            "msg_inject_touch_index": 0,
+            "msg_inject_touch_position": {
+                "x": 0.9, "y": 0.8, "width": _this.data.imgWidth, "height": _this.data.imgHeight
+            }
         })
         this.sendSocketMessage(msg);  
     } 
