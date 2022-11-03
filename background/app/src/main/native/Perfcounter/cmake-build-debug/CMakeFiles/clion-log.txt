@@ -1,0 +1,11 @@
+"C:\Program Files\JetBrains\CLion 2020.2.4\bin\cmake\win\bin\cmake.exe" -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - MinGW Makefiles" D:\upa_github\hardware-perfcounter
+CMake Error at cmake/hpc_cc_library.cmake:51 (add_library):
+  The target name "D-:upa_github-hardware-perfcounter-adrenopipe" is reserved
+  or not valid for certain CMake features, such as generator expressions, and
+  may result in undefined behavior.
+Call Stack (most recent call first):
+  CMakeLists.txt:128 (hpc_cc_library)
+
+
+-- Configuring incomplete, errors occurred!
+See also "D:/upa_github/hardware-perfcounter/cmake-build-debug/CMakeFiles/CMakeOutput.log".

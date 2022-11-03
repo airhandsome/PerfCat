@@ -1,0 +1,81 @@
+import java.util.zip.ZipFile
+
+apply plugin: 'com.android.application'
+
+def enableSeparateBuildPerCPUArchitecture = false
+android {
+    compileSdk 30
+
+    defaultConfig {
+        applicationId "com.unity.uprtech"
+        minSdk 21
+        targetSdk 30
+        versionCode 1
+        versionName "1.0"
+
+        externalNativeBuild {
+            cmake {
+                // 指定编译架构 可以省略
+                abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86', 'x86_64'
+                // cpp 编译时的额外选项 可以省略
+                cppFlags ""
+                version "3.18.1"
+            }
+        }
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    externalNativeBuild {
+        cmake {
+            path "CMakeLists.txt"
+        }
+    }
+}
+
+dependencies {
+
+    implementation 'androidx.appcompat:appcompat:1.2.0'
+    implementation 'com.google.android.material:material:1.3.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
+    implementation fileTree(dir: "libs", include: ["*.jar"])
+    testImplementation 'junit:junit:4.+'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
+    compileOnly project(":apicompat")
+}
+
+task providedApiCompat  {
+
+    doLast {
+
+        println("------------- providedApiCompat ")
+
+        new ZipFile("${rootProject.project("apicompat").buildDir}/outputs/aar/apicompat-debug.aar").withCloseable {
+
+            it.getInputStream(it.getEntry("classes.jar")).withStream{
+                def ins = it
+                def target = file("${project.projectDir}/deps/hidden.jar")
+                target.getParentFile().mkdirs()
+                target.withOutputStream {
+                    it << ins
+                }
+            }
+        }
+
+    }
+
+}
+
+providedApiCompat.dependsOn(':apicompat:assembleDebug')
+preBuild.dependsOn(providedApiCompat)

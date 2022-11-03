@@ -1,0 +1,5 @@
+# Hashes of file build rules.
+fb2c561e06f116ba68ad978c6590310b ../include/hpc/gpu/adreno/a5xx.h
+e39447b8b6a6475111c0e0f2454ef9ab ../include/hpc/gpu/mali/common.h
+e63fecaf2f09188f46ebda8e73af0f80 scripts/CMakeFiles/hpc-adreno-definitions
+e63fecaf2f09188f46ebda8e73af0f80 scripts/CMakeFiles/hpc-mali-definitions

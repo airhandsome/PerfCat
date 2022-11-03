@@ -1,0 +1,1 @@
+ ../lib/gpu/adreno/libhpc-gpu-adreno-a6xx.a ../lib/gpu/adreno/libhpc-gpu-adreno-context.a ../lib/gpu/adreno/libhpc-gpu-adreno-driver-ioctl.a -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32 
