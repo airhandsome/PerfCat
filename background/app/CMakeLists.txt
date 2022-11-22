@@ -10,6 +10,7 @@ cmake_minimum_required(VERSION 3.4.1)
 
 project(native-lib)
 
+
 if(CMAKE_BUILD_TYPE MATCHES Debug)
     Message(***Build type***, add debug marcos)
     add_definitions(-DEE_DEBUG -DUNITY_ANDROID=1)
@@ -23,12 +24,15 @@ include_directories(src/main/native/)
 # include_directories(${PREBUILT_INCLUDE_PATH})
 add_subdirectory(src/main/native/HWCPipe)
 add_subdirectory(src/main/native/Perfcounter)
+add_subdirectory(src/main/native/PVRMonitor)
+
 file(GLOB wrapper src/main/native/Wrapper/JniWrapper.cpp)
 
 add_library(native-lib SHARED ${wrapper})
 
 target_link_libraries(native-lib hwcpipe)
 target_link_libraries(native-lib adrenopipe)
+target_link_libraries(native-lib pvrpipe)
 
 
 find_library(log-lib log)
