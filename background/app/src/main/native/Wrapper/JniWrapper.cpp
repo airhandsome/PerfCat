@@ -2,6 +2,8 @@
 #include <jni.h>
 #include <hwcpipe.h>
 #include <adrenopipe.h>
+#include <pvrpipe.h>
+
 /* Header for class com_unity_uprtech_nativemodules_NativeWrappers */
 
 #ifndef _Included_com_unity_uprtech_nativemodules_NativeWrappers
@@ -9,6 +11,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 /*
  * Class:     com_unity_uprtech_nativemodules_NativeWrappers
  * Method:    jni_hwcpipe_start
@@ -233,7 +236,103 @@ JNIEXPORT jlongArray JNICALL Java_com_unity_uprtech_nativemodules_NativeWrappers
 }
 
 
+
+JNIEXPORT jboolean JNICALL
+Java_com_unity_uprtech_nativemodules_NativeWrappers_initPVRScope(JNIEnv *env, jclass clazz) {
+    // TODO: implement initPVRScope()
+    try {
+        PVRPipe *pprofiler = PVRPipe::Instance();
+
+        return pprofiler->initGpuCounter();
+    } catch(...) {
+        return false;
+    }
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_unity_uprtech_nativemodules_NativeWrappers_deinitPVRScope(JNIEnv *env, jclass clazz) {
+    // TODO: implement deinitPVRScope()
+    return PVRPipe::Instance()->deInitGpuCounter();
+}
+
+JNIEXPORT jintArray JNICALL
+Java_com_unity_uprtech_nativemodules_NativeWrappers_returnCPUMetrics(JNIEnv *env, jclass clazz) {
+    // TODO: implement returnCPUMetrics()
+    PVRPipe *pprofiler = PVRPipe::Instance();
+    pprofiler->pCPUMetrics->updateCPU();
+    unsigned int nNumCores = pprofiler->pCPUMetrics->getNumCores();
+
+    //-- No error handling is being done...
+    jint* buf = new jint[nNumCores];
+    memset (buf, 0, nNumCores);
+
+    for (unsigned int i = 0; i < nNumCores; ++i)
+    {
+        float load = pprofiler->pCPUMetrics->getCPULoad(i);
+        buf[i] = (unsigned char) (load + 0.5);
+    }
+
+    jintArray ret = env->NewIntArray(nNumCores);
+    env->SetIntArrayRegion (ret, 0, nNumCores, buf);
+
+    delete[] buf;
+    return ret;
+
+}
+
+JNIEXPORT jfloatArray JNICALL
+Java_com_unity_uprtech_nativemodules_NativeWrappers_returnPVRScope(JNIEnv *env, jclass clazz) {
+    // TODO: implement returnPVRScope()
+    size_t numCounters  = 0;
+    PVRPipe *pprofiler = PVRPipe::Instance();
+    pprofiler->pPVRScopeHUD->readCounters(true);
+
+    numCounters = pprofiler->pPVRScopeHUD->getNumCounters();
+    LOGE("Number of counters: %d", (int)numCounters);
+
+    jfloat * buf = new jfloat[numCounters];
+    memset (buf, 0, numCounters);
+
+    for(unsigned int i = 0; i < numCounters; i++)
+    {
+        float temp = pprofiler->pPVRScopeHUD->getCounter(i);
+        buf[i] = temp;
+    }
+
+    jfloatArray ret = env->NewFloatArray((jsize)numCounters);
+    env->SetFloatArrayRegion (ret, 0, (jsize)numCounters, buf);
+
+    delete[] buf;
+    return ret;
+}
+
+JNIEXPORT jobjectArray JNICALL
+Java_com_unity_uprtech_nativemodules_NativeWrappers_returnPVRScopeStrings(JNIEnv *env,
+                                                                          jclass clazz) {
+    // TODO: implement returnPVRScopeStrings()
+    PVRPipe *pprofiler = PVRPipe::Instance();
+    size_t numCounters  = 0;
+
+    pprofiler->pPVRScopeHUD->readCounters(true);
+
+
+    numCounters = pprofiler->pPVRScopeHUD->getNumCounters();
+
+    jobjectArray ret = env->NewObjectArray((jsize)numCounters, env->FindClass("java/lang/String"), 0);
+    for(unsigned int i = 0; i < numCounters; i++)
+    {
+        const char* temp = pprofiler->pPVRScopeHUD->getName(i).c_str();
+        jstring str = env->NewStringUTF(temp);
+        env->SetObjectArrayElement(ret, i, str);
+    }
+
+    return ret;
+}
+
+
 #ifdef __cplusplus
 }
 #endif
 #endif
+
+

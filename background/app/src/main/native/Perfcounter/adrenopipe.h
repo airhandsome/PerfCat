@@ -10,6 +10,8 @@
 extern "C" {
 #include "lib/gpu/adreno/common.h"
 #include "lib/gpu/adreno/a6xx.h"
+}
+
 #include "lib/gpu/adreno/a5xx.h"
 #include "lib/gpu/base_utilities.h"
 
@@ -29,7 +31,7 @@ class AdrenoPipe
   hpc_gpu_adreno_context_t* context;
   uint64_t values[1000];
   int num_counters;
-  int type;   //0 a5xx, 1 a6xx
+  int type;   //0 a5xx , 1 a6xx
   hpc_gpu_host_allocation_callbacks_t allocator;
 
   int run();
@@ -45,5 +47,5 @@ class AdrenoPipe
   AdrenoPipe(hpc_gpu_adreno_a5xx_counter_t* gpu_counters, int length);
 };
 
-}
+
 #endif  // HARDWAREPERFCOUNTER_ADRENOPIPE_H

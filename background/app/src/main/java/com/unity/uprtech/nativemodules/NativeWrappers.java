@@ -10,4 +10,14 @@ public class NativeWrappers {
 
     public static native long[] jni_adreno_capture();
 
+    public static native boolean initPVRScope();
+
+    public static native boolean deinitPVRScope();
+
+    public static native int[] returnCPUMetrics();
+
+    public static native float[] returnPVRScope();
+
+    public static native String[] returnPVRScopeStrings();
+
 }

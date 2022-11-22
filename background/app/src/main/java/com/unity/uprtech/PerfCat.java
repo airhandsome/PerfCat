@@ -5,6 +5,7 @@ import android.content.Context;
 import android.app.ActivityThread;
 import android.os.Looper;
 import android.os.Process;
+import android.util.Log;
 
 import com.unity.uprtech.service.BatteryService;
 import com.unity.uprtech.service.CpuService;
@@ -29,7 +30,14 @@ public class PerfCat {
     private Context context = null;
     private Boolean keepCatch = true;
     private static String[] AdrenoType = {"Adreno a5xx", "Adreno a6xx"};
-
+    private GpuService gpu = new GpuService();
+    static {
+        try{
+            System.load("/data/local/tmp/libnative-lib.so");
+        }catch (Exception e){
+            Log.i("perfCat", "load so error");
+        }
+    }
     public static void main(String[] args){
         PerfCat cat = new PerfCat();
         PrintStream printStream = System.out;
@@ -54,6 +62,7 @@ public class PerfCat {
         Options options = new Options();
 
         options.addOption("check", false, "check if the gpu can get");
+        options.addOption("stop", false, "stop gpu initialized");
         options.addOption("g", "gpu", false, "get Gpu profiler");
         options.addOption("b", "battery",false, "get Battery");
 
@@ -72,15 +81,25 @@ public class PerfCat {
             CommandLineParser parser = new DefaultParser();
             CommandLine cmd = parser.parse(options, args);
             if (cmd.hasOption("check")){
+                Log.i("PerfCat","start check");
                 int res = cat.CheckAdrenoGpuAvailable();
                 if (res >= 0){
                     System.out.println(AdrenoType[res]);
                 }else if (cat.CheckMaliGpuAvailable()){
                     System.out.println("mali");
+                }else if (cat.CheckPowerVRAvailable()){
+                    System.out.println("power vr");
+
+                    String[] names = cat.GetPowerVRNames();
+                    for (String name:names) {
+                        System.out.println(name);
+                    }
                 }else{
                     System.out.println("null");
                 }
-
+            }
+            if (cmd.hasOption("stop")){
+                System.out.println(cat.ClosePowerVR());
             }
             if (cmd.hasOption("g")){
                 cat.GetGpuSnapshot();
@@ -108,28 +127,42 @@ public class PerfCat {
 
 
     private void GetGpuSnapshot(){
-        GpuService gpu = new GpuService();
         if (gpu.startAdrenoGpuProfiler() >= 0){
             gpu.type = "adreno";
         }else if (gpu.startMaliGpuProfiler()){
             gpu.type = "mali";
-        }else{
+        }else if (gpu.startPVRGpuProfiler()){
+            gpu.type = "pvr";
+        }
+        else{
             System.out.println("Can't support such gpu type");
         }
         try{
             while(keepCatch){
                 long[] gpuSnapshot = new long[1];
+                float[] pvrGpuSnapshot = new float[1];
                 if (gpu.type == "adreno"){
                     gpuSnapshot = gpu.getAdrenoGpuSnapshot();
                 }else if (gpu.type == "mali"){
                     gpuSnapshot = gpu.getMaliGpuSnapshot();
-                }else{
+                }else if (gpu.type == "pvr"){
+                    pvrGpuSnapshot = gpu.getPVRGpuSnapshot();
+                }
+                else{
                     break;
                 }
                 if (gpuSnapshot.length > 1){
                     System.out.print(gpuSnapshot[0]);
                     for (int i=1; i<gpuSnapshot.length; i++){
                         System.out.print("," + gpuSnapshot[i]);
+                    }
+                    System.out.println();
+                }
+
+                if (pvrGpuSnapshot.length > 1){
+                    System.out.print(pvrGpuSnapshot[0]);
+                    for (int i=1; i<pvrGpuSnapshot.length; i++){
+                        System.out.print("," + pvrGpuSnapshot[i]);
                     }
                     System.out.println();
                 }
@@ -144,7 +177,6 @@ public class PerfCat {
 
     private boolean CheckMaliGpuAvailable(){
         try{
-            GpuService gpu = new GpuService();
             return gpu.startMaliGpuProfiler();
         }catch (Exception e){
             System.out.println(e);
@@ -154,11 +186,35 @@ public class PerfCat {
 
     private int CheckAdrenoGpuAvailable(){
         try{
-            GpuService gpu = new GpuService();
             return gpu.startAdrenoGpuProfiler();
         }catch (Exception e){
             System.out.println(e);
             return -1;
+        }
+    }
+
+    private boolean CheckPowerVRAvailable(){
+        try{
+            return gpu.startPVRGpuProfiler();
+        }catch (Exception e){
+            System.out.println(e);
+            return false;
+        }
+    }
+    private String[] GetPowerVRNames(){
+        try{
+            return gpu.getPVRGpuNames();
+        }catch (Exception e){
+            return new String[]{};
+        }
+    }
+
+    private boolean ClosePowerVR(){
+        try{
+            return gpu.stopPVRGpuProfiler();
+        }catch (Exception e){
+            System.out.println(e);
+            return false;
         }
     }
 

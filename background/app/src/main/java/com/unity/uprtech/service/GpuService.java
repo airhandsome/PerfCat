@@ -4,21 +4,15 @@ import android.util.Log;
 
 import com.unity.uprtech.nativemodules.NativeWrappers;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 public class GpuService {
     private ExecutorService gpuProfileService;
     public String type = "";
-    public GpuService(){
-        System.load("/data/local/tmp/libnative-lib.so");
-    }
+    public GpuService(){}
 
-    public static String[] gpuKey = new String[]{
+
+    public static String[] maligpuKey = new String[]{
             "GpuCycles",
             "ComputeCycles",
             "VertexCycles",
@@ -63,11 +57,12 @@ public class GpuService {
     }
 
     public long[] getMaliGpuSnapshot() {
-
+        Log.i("perfCat", "start mali init");
         return NativeWrappers.jni_hwcpipe_capture();
     }
 
     public int startAdrenoGpuProfiler(){
+        Log.i("perfCat", "start adreno init");
         return NativeWrappers.jni_adreno_start();
     }
 
@@ -75,6 +70,26 @@ public class GpuService {
         return NativeWrappers.jni_adreno_capture();
     }
 
+    public boolean startPVRGpuProfiler(){
+        Log.i("perfCat", "start pvr init");
+        return NativeWrappers.initPVRScope();
+    }
 
-
+    public float[] getPVRGpuSnapshot(){
+//        int[] cpuMetric = NativeWrappers.returnCPUMetrics();
+        float[] scopeData = NativeWrappers.returnPVRScope();
+//        String[] s = NativeWrappers.returnPVRScopeStrings();
+//        System.out.println(s.length);
+//        System.out.println(scopeData.length);
+//        for (int i = 0; i < s.length; i++){
+//            System.out.printf("Get %s with value %f\n", s[i], scopeData[i]);
+//        }
+        return scopeData;
+    }
+    public boolean stopPVRGpuProfiler(){
+        return NativeWrappers.deinitPVRScope();
+    }
+    public String[] getPVRGpuNames(){
+        return NativeWrappers.returnPVRScopeStrings();
+    }
 }
