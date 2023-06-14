@@ -148,6 +148,10 @@ bool PVRScopeHUD::readCounters(bool toReturnData)
 
 float PVRScopeHUD::getCounter(unsigned int index)
 {
+    if (index >= m_sPVRScopeCounterReading.nValueCnt)
+    {
+        return 0;
+    }
     float retVal = m_sPVRScopeCounterReading.pfValueBuf[index];
 
     if(m_pPVRScopeCounterDef[index].nBoolPercentage)
